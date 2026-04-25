@@ -228,9 +228,10 @@ function renderGameCard(game, dateKey) {
 
   const nearMeClass = nearMe ? 'near-me' : '';
   const liveClass = status === 'LIVE' ? 'live' : '';
+  const todayClass = isToday(game.date) ? 'today' : '';
 
   return `
-    <div class="game-card ${nearMeClass} ${liveClass}" data-pk="${game.gamePk}">
+    <div class="game-card ${nearMeClass} ${liveClass} ${todayClass}" data-pk="${game.gamePk}">
       <div class="game-card-date">
         <span class="game-card-month">${MONTHS_SHORT[d.getMonth()]}</span>
         <span class="game-card-day">${day}</span>

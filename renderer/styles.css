@@ -666,6 +666,59 @@ body::before {
   box-shadow: 0 4px 24px rgba(224, 64, 58, 0.18);
 }
 
+.game-card.today {
+  border-color: var(--gold-primary);
+  background:
+    linear-gradient(135deg, rgba(212, 175, 55, 0.16) 0%, rgba(40, 32, 8, 0.55) 50%, rgba(26, 26, 26, 0.75) 100%);
+  box-shadow:
+    0 0 0 1px var(--gold-glow),
+    0 6px 28px rgba(212, 175, 55, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: todayPulse 2.6s ease-in-out infinite;
+}
+.game-card.today::after {
+  content: 'TODAY';
+  position: absolute;
+  top: 8px; right: 12px;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #000;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
+  padding: 2px 8px;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.45);
+  text-shadow: none;
+}
+.game-card.today .game-card-day {
+  color: var(--gold-light);
+  text-shadow: 0 0 14px var(--gold-glow);
+}
+.game-card.today .game-card-month {
+  color: var(--gold-primary);
+}
+.game-card.today .game-card-time-value {
+  color: var(--gold-light);
+}
+.game-card.today:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px var(--gold-primary),
+    0 8px 32px rgba(212, 175, 55, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+@keyframes todayPulse {
+  0%, 100% { box-shadow: 0 0 0 1px var(--gold-glow), 0 6px 28px rgba(212, 175, 55, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+  50%      { box-shadow: 0 0 0 1px var(--gold-primary), 0 6px 36px rgba(212, 175, 55, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.10); }
+}
+/* If a game is BOTH today AND live, the live state still wins for the
+   border (red) but the gold TODAY badge stays visible. */
+.game-card.today.live {
+  border-color: rgba(224, 64, 58, 0.65);
+  animation: none;
+}
+
 .game-card-date {
   display: flex;
   flex-direction: column;
@@ -1475,6 +1528,91 @@ body::before {
 .offline-banner.active { display: flex; }
 
 /* ─── Empty / Error states ──────────────────────────────────────────────── */
+/* ─── FORM GUIDE ──────────────────────────────────────────────────────────────── */
+.form-guide-card { flex-shrink: 0; }
+.form-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.form-pill {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+  cursor: default;
+  transition: all var(--transition);
+}
+.form-pill.win {
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.18) 0%, rgba(0, 122, 51, 0.10) 100%);
+  border-color: rgba(0, 200, 83, 0.45);
+  color: var(--green-live);
+  text-shadow: 0 0 8px rgba(0, 200, 83, 0.4);
+}
+.form-pill.loss {
+  background: linear-gradient(135deg, rgba(224, 64, 58, 0.18) 0%, rgba(196, 30, 58, 0.10) 100%);
+  border-color: rgba(224, 64, 58, 0.45);
+  color: var(--red-accent);
+  text-shadow: 0 0 8px rgba(224, 64, 58, 0.4);
+}
+.form-pill.empty {
+  background: rgba(20, 20, 20, 0.4);
+  border-color: var(--border-glass);
+  color: var(--text-muted);
+}
+.form-pill:hover.win { box-shadow: 0 0 12px rgba(0, 200, 83, 0.3); }
+.form-pill:hover.loss { box-shadow: 0 0 12px rgba(224, 64, 58, 0.3); }
+
+.form-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.7) 0%, rgba(17, 17, 17, 0.5) 100%);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-glass);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.form-recent:hover {
+  border-color: var(--gold-dim);
+  box-shadow: var(--shadow-gold-soft);
+}
+.form-recent-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+.form-recent-result { font-weight: 700; letter-spacing: 1px; }
+.form-recent-result.win  { color: var(--green-live); }
+.form-recent-result.loss { color: var(--red-accent); }
+.form-recent-score { color: var(--text-primary); font-weight: 600; }
+.form-recent-meta { color: var(--text-muted); font-size: 10px; }
+.form-recent-empty {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+#formStreak {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+#formStreak.win  { color: var(--green-live); }
+#formStreak.loss { color: var(--red-accent); }
+
 .error-state {
   display: flex;
   flex-direction: column;

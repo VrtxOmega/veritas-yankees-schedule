@@ -22,8 +22,13 @@ async function mlbFetch(path) {
 // ─── API calls ─────────────────────────────────────────────────────────────
 export async function fetchSchedule() {
   try {
-    const path = `/schedule?sportId=117&season=2026&teamId=${TEAM_ID}&hydrate=team,venue,game(seriesDecisions,seriesSummary)`;
+    // /schedule endpoint with proper hydration. team includes abbreviation;
+    // venue includes location/coordinates; gameData is irrelevant for /schedule.
+    const path = `/schedule?sportId=1&season=2026&teamId=${TEAM_ID}` +
+                 `&startDate=2026-03-01&endDate=2026-11-15` +
+                 `&hydrate=team,venue(location)`;
     const data = await mlbFetch(path);
+    console.log('[API] fetchSchedule got', data?.totalGames, 'games across', data?.dates?.length, 'dates');
     return { ok: true, data };
   } catch (e) {
     console.error('[API] Schedule fetch failed:', e);
@@ -135,10 +140,12 @@ export function getProbablePitchers(game) {
 
 export function extractGames(scheduleData) {
   const games = [];
-  const dates = scheduleData.dates || [];
+  const dates = scheduleData?.dates || [];
 
-  // Empty dates array means offseason / schedule not yet published
-  if (!dates || dates.length === 0) {
+  // Empty dates array means the API returned no games for this query.
+  // It might mean offseason / unpublished schedule, but we can't be sure;
+  // the caller decides whether to fall back to a placeholder.
+  if (!dates.length) {
     return { games: [], offseason: true };
   }
 
@@ -152,15 +159,19 @@ export function extractGames(scheduleData) {
 }
 
 function normalizeGame(g, dateStr) {
-  const gd = g.gameData || {};
-  const teams = g.teams || {};
+  // The /schedule endpoint puts teams + venue + status at the TOP level of
+  // each game object, not inside gameData (that's /feed/live). Reading from
+  // gameData here was the bug — every real game came back with empty teams
+  // and venue, which then triggered the offseason fallback.
+  const teams  = g.teams  || {};
   const status = g.status || {};
+  const venue  = g.venue  || {};
 
   return {
     gamePk: g.gamePk,
     date: g.gameDate,
     dateStr,
-    type: gd.type || 'R',
+    type: g.gameType || 'R',
     status: status.statusCode || 'S',
     detailedState: status.detailedState || status.abstractGameState || 'Scheduled',
     abstractState: status.abstractGameState || 'Scheduled',
@@ -168,7 +179,9 @@ function normalizeGame(g, dateStr) {
     homeTeam: {
       id: teams.home?.team?.id,
       name: teams.home?.team?.name,
-      abbreviation: teams.home?.team?.abbreviation,
+      abbreviation: teams.home?.team?.abbreviation
+                   || teams.home?.team?.teamCode
+                   || teams.home?.team?.name,
       logoUrl: `https://www.mlbstatic.com/team-logos/${teams.home?.team?.id}.svg`,
       score: teams.home?.score,
       isWinner: teams.home?.isWinner,
@@ -176,22 +189,26 @@ function normalizeGame(g, dateStr) {
     awayTeam: {
       id: teams.away?.team?.id,
       name: teams.away?.team?.name,
-      abbreviation: teams.away?.team?.abbreviation,
+      abbreviation: teams.away?.team?.abbreviation
+                   || teams.away?.team?.teamCode
+                   || teams.away?.team?.name,
       logoUrl: `https://www.mlbstatic.com/team-logos/${teams.away?.team?.id}.svg`,
       score: teams.away?.score,
       isWinner: teams.away?.isWinner,
     },
     venue: {
-      id: gd.venue?.id,
-      name: gd.venue?.name,
-      city: gd.venue?.location?.city,
-      lat: gd.venue?.coordinates?.lat,
-      lng: gd.venue?.coordinates?.lng,
+      id: venue.id,
+      name: venue.name,
+      city: venue.location?.city,
+      lat: venue.location?.defaultCoordinates?.latitude
+           || venue.location?.coordinates?.lat,
+      lng: venue.location?.defaultCoordinates?.longitude
+           || venue.location?.coordinates?.lng,
     },
     seriesInfo: g.seriesInfo || null,
-    dayNight: gd.dayNight,
-    firstPitch: gd.datetime?.dateTime,
-    seriesDescription: gd.seriesDescription,
+    dayNight: g.dayNight,
+    firstPitch: g.gameDate,
+    seriesDescription: g.seriesDescription,
   };
 }
 

@@ -57,6 +57,8 @@ async function init() {
     console.log('[init] renderNearMeMap done');
     await renderBatters();
     console.log('[init] renderBatters done');
+    renderFormGuide();
+    console.log('[init] renderFormGuide done');
 
     // News ticker — don't block init on it.
     loadNews().then(items => renderNewsTicker(items)).catch(e => console.warn('[news]', e));
@@ -84,6 +86,7 @@ async function init() {
       updateSyncTime();
       showSyncSpinner(false);
       renderRivalries();
+      renderFormGuide();
     }, 60000);
 
     // Filter listeners
@@ -339,6 +342,101 @@ async function renderBatters() {
   }
 }
 
+// ─── Form Guide ──────────────────────────────────────────────────────
+// Last 5 completed games as colored W/L pills + a one-line summary of the
+// most recent game. Reads from `allGames` only — no extra API calls.
+function renderFormGuide() {
+  const pillsEl  = document.getElementById('formPills');
+  const recentEl = document.getElementById('formRecent');
+  const streakEl = document.getElementById('formStreak');
+  if (!pillsEl || !recentEl) return;
+
+  // Find completed games. Real MLB API uses `homeTeam.isWinner` /
+  // `awayTeam.isWinner` plus `status.abstractGameState === 'Final'`.
+  // The placeholder generator doesn't backfill these, so fall back to
+  // synthetic results for any past-dated game without an explicit winner
+  // (so the panel isn't empty offline).
+  const now = Date.now();
+  const completed = allGames
+    .filter(g => {
+      const t = new Date(g.date).getTime();
+      if (t > now) return false;
+      const status = g.status?.abstractGameState || g.abstractState;
+      const detailed = g.status?.detailedState || g.detailedState;
+      // Real final game OR placeholder past game.
+      return status === 'Final' || detailed === 'Final' || g.scheduled === true;
+    })
+    .map(g => {
+      const isHome = g.homeTeam.id === 147;
+      const nyy = isHome ? g.homeTeam : g.awayTeam;
+      const opp = isHome ? g.awayTeam : g.homeTeam;
+      let nyyScore = nyy.score;
+      let oppScore = opp.score;
+      let won = nyy.isWinner;
+
+      // Synthesize a result for placeholder games (deterministic per gamePk
+      // so reloads don't shuffle history).
+      if (won === null || won === undefined || nyyScore == null) {
+        const seed = (g.gamePk || 0) * 9301 + 49297;
+        const r = ((seed % 233280) / 233280); // 0..1, deterministic
+        won = r < 0.62; // ~62% win rate (Yankees pace for ~100W)
+        nyyScore = won ? 4 + Math.floor(r * 6) : 1 + Math.floor(r * 4);
+        oppScore = won ? Math.floor(r * 4) : 4 + Math.floor(r * 5);
+      }
+      return {
+        date: g.date,
+        opp: opp.abbreviation || opp.name,
+        isHome,
+        won: !!won,
+        nyyScore,
+        oppScore,
+        venue: g.venue?.name,
+      };
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date)); // newest first
+
+  if (completed.length === 0) {
+    pillsEl.innerHTML = Array(5).fill('<span class="form-pill empty">—</span>').join('');
+    recentEl.innerHTML = '<span class="form-recent-empty">No recent games</span>';
+    streakEl.textContent = '';
+    streakEl.className = '';
+    return;
+  }
+
+  // Last 5, displayed oldest → newest (left to right).
+  const last5 = completed.slice(0, 5).reverse();
+  while (last5.length < 5) last5.unshift(null);
+
+  pillsEl.innerHTML = last5.map(g => {
+    if (!g) return '<span class="form-pill empty">—</span>';
+    const cls = g.won ? 'win' : 'loss';
+    const tip = `${formatDateShort(g.date)} ${g.isHome ? 'vs' : '@'} ${g.opp} · ${g.won ? 'W' : 'L'} ${g.nyyScore}-${g.oppScore}`;
+    return `<span class="form-pill ${cls}" title="${tip}">${g.won ? 'W' : 'L'}</span>`;
+  }).join('');
+
+  // Streak header.
+  let streakLen = 1;
+  const firstResult = completed[0].won;
+  for (let i = 1; i < completed.length; i++) {
+    if (completed[i].won === firstResult) streakLen++;
+    else break;
+  }
+  streakEl.textContent = `${firstResult ? 'W' : 'L'}${streakLen}`;
+  streakEl.className = firstResult ? 'win' : 'loss';
+
+  // Most recent game line.
+  const last = completed[0];
+  const resultCls = last.won ? 'win' : 'loss';
+  recentEl.innerHTML = `
+    <div class="form-recent-line">
+      <span class="form-recent-result ${resultCls}">${last.won ? 'W' : 'L'}</span>
+      <span class="form-recent-score">${last.nyyScore}–${last.oppScore}</span>
+      <span class="form-recent-meta">${last.isHome ? 'vs' : '@'} ${last.opp}</span>
+    </div>
+    <div class="form-recent-meta">${formatDateShort(last.date)} · ${last.venue || ''}</div>
+  `;
+}
+
 // ─── Near Me Map ────────────────────────────────────────────────────────────
 function renderNearMeMap() {
   document.getElementById('nearMeMap').innerHTML = getMapSvg();
@@ -472,6 +570,7 @@ function renderAll() {
   renderScheduleForMonth(currentMonth);
   renderTodayHero(getGamesForToday());
   renderRivalries();
+  renderFormGuide();
 }
 
 function updateSyncTime() {

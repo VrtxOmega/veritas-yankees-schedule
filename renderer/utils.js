@@ -102,7 +102,7 @@ export function debounce(fn, ms) {
 // Bump CACHE_VERSION whenever the shape of cached data changes (e.g. when
 // the placeholder schedule generator is updated). Any old cache entries
 // keyed under previous versions become unreachable and effectively expire.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 
 export function cacheGet(key) {
   try {
