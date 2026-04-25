@@ -1,0 +1,37 @@
+{
+  "name": "veritas-yankees-schedule",
+  "version": "1.0.0",
+  "description": "VERITAS Yankees 2026 Interactive Schedule — MLB live scores, near-me game filter, rivalry tracker",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "author": "VERITAS / Rage Ω",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "dependencies": {},
+  "build": {
+    "appId": "com.veritas.yankees-schedule",
+    "productName": "VERITAS Yankees 2026",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "build/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.png"
+    },
+    "portable": {
+      "artifactName": "VERITAS-Yankees-2026.exe"
+    }
+  }
+}
