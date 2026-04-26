@@ -238,7 +238,16 @@ function renderGameCard(game, dateKey) {
 
   const broadcasts = getBroadcasts(game) || [];
   const watchHtml = broadcasts.map(b => {
-    const cls = b.includes('ESPN') ? 'espn' : b.includes('YES') ? 'yes' : b.includes('MLB') ? 'mlb' : b.includes('FOX') ? 'fox' : '';
+    const s = b.toUpperCase();
+    const cls = s.includes('ESPN') ? 'espn' :
+                s.includes('YES') ? 'yes' :
+                s.includes('MLB') ? 'mlb' :
+                (s.includes('FOX') || s.includes('FS1')) ? 'fox' :
+                s.includes('APPLE') ? 'apple' :
+                (s.includes('PRIME') || s.includes('AMAZON')) ? 'prime' :
+                s.includes('PEACOCK') ? 'peacock' :
+                s.includes('TBS') ? 'tbs' :
+                s.includes('ROKU') ? 'roku' : '';
     return `<span class="watch-badge ${cls}">${b}</span>`;
   }).join('');
 

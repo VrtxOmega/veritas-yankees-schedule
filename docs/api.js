@@ -26,7 +26,7 @@ export async function fetchSchedule() {
     // venue includes location/coordinates; gameData is irrelevant for /schedule.
     const path = `/schedule?sportId=1&season=2026&teamId=${TEAM_ID}` +
                  `&startDate=2026-03-01&endDate=2026-11-15` +
-                 `&hydrate=team,venue(location)`;
+                 `&hydrate=team,venue(location),broadcasts`;
     const data = await mlbFetch(path);
     console.log('[API] fetchSchedule got', data?.totalGames, 'games across', data?.dates?.length, 'dates');
     return { ok: true, data };
@@ -114,16 +114,25 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
 }
 
 // ─── Data helpers ───────────────────────────────────────────────────────────
-export function getBroadcasts(game) {
+ export function getBroadcasts(game) {
   const broadcasts = [];
-  const content = game.content || {};
-  const media = content.media || {};
-  const episodes = media.episodes || [];
-  episodes.forEach(ep => {
-    if (ep.gameWindowStart && ep.callLetters) {
-      broadcasts.push(ep.callLetters);
-    }
-  });
+  
+  // From /schedule hydrate=broadcasts
+  if (game.broadcasts) {
+    game.broadcasts.forEach(b => {
+      if (b.type === 'TV') {
+        broadcasts.push(b.name);
+      }
+    });
+  }
+  
+  // Fallback for /feed/live structure if needed
+  if (broadcasts.length === 0 && game.content?.media?.episodes) {
+    game.content.media.episodes.forEach(ep => {
+      if (ep.callLetters) broadcasts.push(ep.callLetters);
+    });
+  }
+
   return [...new Set(broadcasts)].slice(0, 3);
 }
 
@@ -209,6 +218,8 @@ function normalizeGame(g, dateStr) {
     dayNight: g.dayNight,
     firstPitch: g.gameDate,
     seriesDescription: g.seriesDescription,
+    broadcasts: g.broadcasts || [],
+    content: g.content || {}
   };
 }
 
