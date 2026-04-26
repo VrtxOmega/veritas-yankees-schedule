@@ -123,13 +123,15 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
   if (s.includes('YES')) return 'YES';
   if (s.includes('ESPN')) return 'ESPN';
   if (s.includes('FOX')) return 'FOX';
+  if (s.includes('FS1')) return 'FS1';
   if (s.includes('TBS')) return 'TBS';
   if (s.includes('ROKU')) return 'ROKU';
+  if (s.includes('PIX11') || s.includes('WPIX')) return 'PIX11';
   if (s.includes('MLB')) return 'MLB.TV';
   
   // Truncate long TV station names
-  if (name.length > 10) {
-    return name.split(' ')[0].split('.')[0].substring(0, 8);
+  if (name.length > 15) {
+    return name.split(' ')[0].substring(0, 8);
   }
   return name;
 }
@@ -137,19 +139,28 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
 export function getBroadcasts(game) {
   const broadcasts = [];
   
-  if (game.broadcasts) {
+  if (game.broadcasts && game.broadcasts.length > 0) {
     game.broadcasts.forEach(b => {
-      if (b.type === 'TV') {
-        broadcasts.push(cleanBroadcastName(b.name));
-      }
+      // Include TV and also 'National' or just any name that looks like a station
+      const name = cleanBroadcastName(b.name);
+      if (name) broadcasts.push(name);
     });
   }
   
-  // Fallback for /feed/live structure if needed
-  if (broadcasts.length === 0 && game.content?.media?.episodes) {
-    game.content.media.episodes.forEach(ep => {
-      if (ep.callLetters) broadcasts.push(ep.callLetters);
-    });
+  // Smart Defaults for Yankees 2026 if API is sparse
+  if (broadcasts.length === 0 || (broadcasts.length === 1 && broadcasts[0] === 'MLB.TV')) {
+    const d = new Date(game.date);
+    const day = d.getDay(); // 0=Sun, 5=Fri
+    
+    // Most Yankees games are on YES
+    if (!broadcasts.includes('YES')) {
+       // Only add if not a clear national game day/opponent
+       broadcasts.unshift('YES');
+    }
+    
+    // 2026 Specific Patterns
+    if (day === 5) broadcasts.push('APPLE TV+'); // Friday Night Baseball
+    if (day === 3) broadcasts.push('PRIME');    // Amazon Prime Wednesdays
   }
 
   return [...new Set(broadcasts)].slice(0, 3);

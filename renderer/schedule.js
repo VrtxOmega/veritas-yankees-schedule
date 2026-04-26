@@ -236,7 +236,7 @@ function renderGameCard(game, dateKey) {
   const nearMe = venue ? venue.dist !== null && venue.dist <= NEAR_ME_RADIUS : false;
   const distance = venue?.dist ?? (game.venue?.lat ? getDistanceFromStL(game.venue.lat, game.venue.lng) : null);
 
-  const broadcasts = getBroadcasts(game) || [];
+    const broadcasts = getBroadcasts(game) || [];
   const watchHtml = broadcasts.map(b => {
     const s = b.toUpperCase();
     const cls = s.includes('ESPN') ? 'espn' :
@@ -247,7 +247,8 @@ function renderGameCard(game, dateKey) {
                 (s.includes('PRIME') || s.includes('AMAZON')) ? 'prime' :
                 s.includes('PEACOCK') ? 'peacock' :
                 s.includes('TBS') ? 'tbs' :
-                s.includes('ROKU') ? 'roku' : '';
+                s.includes('ROKU') ? 'roku' :
+                s.includes('PIX') ? 'fox' : ''; // Default PIX to blueish if no specific color
     return `<span class="watch-badge ${cls}">${b}</span>`;
   }).join('');
 
@@ -298,7 +299,7 @@ function renderGameCard(game, dateKey) {
       </div>
       <div class="game-card-info">
         ${statusHtml}
-        <div class="game-card-watch">${watchHtml || '<span class="watch-badge">MLB.TV</span>'}</div>
+        <div class="game-card-watch">${watchHtml}</div>
       </div>
     </div>`;
 }
