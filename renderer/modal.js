@@ -1,6 +1,7 @@
 /* ─── modal.js — Game detail modal ────────────────────────────────────────── */
 
-import { getGameStatus, formatDate, formatTime, generateICS, getLocalTimezone } from './utils.js';
+import { formatDate, formatTime, generateICS, getLocalTimezone } from './utils.js';
+import { getGameStatus } from './schedule.js';
 import { getProbablePitchers, getBroadcasts } from './api.js';
 
 let isOpen = false;

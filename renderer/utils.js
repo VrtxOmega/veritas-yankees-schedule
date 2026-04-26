@@ -79,9 +79,7 @@ export function getMonthIndex(dateStr) {
   return new Date(dateStr).getMonth(); // 0-indexed
 }
 
-// Re-export the unified status checker from schedule.js so all modules
-// import from a single source of truth.
-export { getGameStatus } from './schedule.js';
+// Removed re-export to avoid circular dependency with schedule.js
 
 export function generateICS(game) {
   const d = new Date(game.date);

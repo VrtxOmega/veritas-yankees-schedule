@@ -2,7 +2,8 @@
 
 import { getLiveGames, allGames } from './schedule.js';
 import { fetchLiveGame } from './api.js';
-import { getGameStatus, formatLocalTime, getLocalTimezone } from './utils.js';
+import { formatLocalTime, getLocalTimezone } from './utils.js';
+import { getGameStatus } from './schedule.js';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 let pollTimer = null;
