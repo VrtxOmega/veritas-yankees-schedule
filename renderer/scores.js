@@ -2,7 +2,7 @@
 
 import { getLiveGames, allGames } from './schedule.js';
 import { fetchLiveGame } from './api.js';
-import { getGameStatus } from './utils.js';
+import { getGameStatus, formatLocalTime, getLocalTimezone } from './utils.js';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 let pollTimer = null;
@@ -192,9 +192,9 @@ function renderTodayGameCard(game) {
     const d = new Date(game.date);
     scoreHtml = `
       <div class="today-scoreboard">
-        <div class="today-score" style="font-size:20px;color:var(--text-muted)">${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}</div>
+        <div class="today-score" style="font-size:20px;color:var(--text-muted)">${formatLocalTime(game.date)}</div>
       </div>
-      <div class="today-time">First Pitch · ET</div>`;
+      <div class="today-time">First Pitch · ${getLocalTimezone()}</div>`;
   }
 
   return `

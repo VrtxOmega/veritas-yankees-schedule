@@ -36,6 +36,23 @@ export function formatTime(dateStr, tz = 'America/New_York') {
   } catch { return 'TBD'; }
 }
 
+export function formatLocalTime(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('en-US', {
+      hour: 'numeric', minute: '2-digit', hour12: true
+    });
+  } catch { return 'TBD'; }
+}
+
+export function getLocalTimezone() {
+  try {
+    const d = new Date();
+    // Short code like 'CT', 'ET', 'PT'
+    return d.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop();
+  } catch { return 'LT'; }
+}
+
 export function formatTimeAgo(dateStr) {
   const now = Date.now();
   const d = new Date(dateStr).getTime();
