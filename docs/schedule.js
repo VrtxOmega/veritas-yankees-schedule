@@ -16,6 +16,11 @@ import { openModal } from './modal.js';
 export let allGames = [];
 export let filteredGames = [];
 export let rivalryGames = { sox: [], mets: [], stl: [] };
+export let nearMeGames = [];
+
+const RIVALRY_TEAM_IDS = {
+  sox: 111,    // Boston Red Sox
+  mets: 121,   // New York Mets
   stl: 138,    // St. Louis Cardinals
 };
 
