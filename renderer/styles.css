@@ -1689,12 +1689,14 @@ body::before {
 }
 
 @media (max-width: 480px) {
-  .header-center { display: none; } /* Hide live indicator on tiny screens to avoid overlap */
+  .header-center { display: none !important; }
   .game-card {
-    grid-template-columns: 50px 1fr 70px;
+    grid-template-columns: 50px 1fr 90px !important;
   }
-  .game-card-opponent-name { font-size: 12px; }
-  .game-card-day { font-size: 18px; }
+  .game-card-opponent-name { font-size: 12px !important; }
+  .game-card-day { font-size: 18px !important; }
+  .game-card-info { min-width: 80px !important; }
+}
 }
 
 
@@ -1736,7 +1738,7 @@ body::before {
   .game-card-day { font-size: 22px !important; }
   .game-card-matchup { grid-column: 2 !important; }
   .game-card-venue { display: none !important; }
-  .game-card-at { grid-column: 3 !important; text-align: right !important; }
+  .game-card-info { grid-column: 3 !important; grid-row: span 2 !important; text-align: right !important; }
 }
 
 @media (max-width: 480px) {
