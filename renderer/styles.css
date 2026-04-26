@@ -653,12 +653,20 @@ body::before {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--gold-glow-soft);
 }
 .game-card.near-me::after {
-  content: 'Ã¢Ëœâ€¦';
+  content: '★ NEAR ME';
   position: absolute;
-  top: 8px; right: 10px;
-  font-size: 11px;
+  top: 8px;
+  right: 12px;
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
   color: var(--gold-primary);
   text-shadow: 0 0 8px var(--gold-glow);
+  background: rgba(212, 175, 55, 0.1);
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
 }
 .game-card.live {
   border-color: rgba(224, 64, 58, 0.5);
@@ -1775,9 +1783,10 @@ body::before {
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
-  gap: 4px;
-  min-width: 90px;
+  gap: 2px;
+  min-width: 100px;
   text-align: right;
+  padding-right: 4px;
 }
 .game-card-watch {
   display: flex;
