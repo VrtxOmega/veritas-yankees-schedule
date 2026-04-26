@@ -1686,31 +1686,27 @@ body::before {
 
 
 /* -----------------------------------------------------------------------------
-   MOBILE RESPONSIVENESS — SOVEREIGN PATCH v1.1 (HARDENED)
+   MOBILE RESPONSIVENESS — SAFE PATCH v3.0
 ----------------------------------------------------------------------------- */
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   body { overflow: auto !important; height: auto !important; min-height: 100vh !important; }
   .app-main {
-    grid-template-columns: 1fr !important;
-    height: auto !important;
-    overflow: visible !important;
     display: flex !important;
     flex-direction: column !important;
-  }
-  .sidebar-left, .sidebar-right {
-    border: none !important;
-    border-top: 1px solid var(--border-glass) !important;
     height: auto !important;
     overflow: visible !important;
+  }
+  .sidebar-left, .sidebar-right {
     width: 100% !important;
     flex: none !important;
+    height: auto !important;
+    border: none !important;
+    border-top: 1px solid var(--border-glass) !important;
   }
   .schedule-section { height: auto !important; overflow: visible !important; flex: none !important; }
   .schedule-list { overflow: visible !important; height: auto !important; }
-}
-
-@media (max-width: 768px) {
+  
   .app-header { height: 64px !important; padding: 0 12px !important; }
   .header-veritas { font-size: 9px !important; letter-spacing: 2px !important; }
   .header-yankees { font-size: 14px !important; letter-spacing: 1px !important; }
@@ -1727,13 +1723,6 @@ body::before {
   .game-card-matchup { grid-column: 2 !important; }
   .game-card-venue { display: none !important; }
   .game-card-at { grid-column: 3 !important; text-align: right !important; }
-  
-  .month-nav {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 1000 !important;
-    background: var(--bg-glass-strong) !important;
-  }
 }
 
 @media (max-width: 480px) {
