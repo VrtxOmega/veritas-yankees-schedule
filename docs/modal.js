@@ -1,6 +1,6 @@
 /* ─── modal.js — Game detail modal ────────────────────────────────────────── */
 
-import { getGameStatus, formatDate, formatTime, generateICS } from './utils.js';
+import { getGameStatus, formatDate, formatTime, generateICS, getLocalTimezone } from './utils.js';
 import { getProbablePitchers, getBroadcasts } from './api.js';
 
 let isOpen = false;
@@ -121,7 +121,7 @@ function renderModalContent(game) {
         <div class="modal-score" style="font-size:28px;color:var(--text-muted)">
           ${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}
         </div>
-        <div class="modal-inning" style="color:var(--text-muted)">FIRST PITCH · ET</div>
+        <div class="modal-inning" style="color:var(--text-muted)">FIRST PITCH · ${getLocalTimezone()}</div>
       </div>`;
   }
 
@@ -209,7 +209,7 @@ function renderDetailRows(game, isNYYHome) {
     ['VENUE', game.venue?.name || 'TBD'],
     ['LOCATION', game.venue?.city || ''],
     ['DATE', formatDate(game.date)],
-    ['TIME', formatTime(game.date) + ' ET'],
+    ['TIME', formatTime(game.date) + ' ' + getLocalTimezone()],
     ['SERIES', game.seriesDescription || 'Regular Season'],
   ];
   if (game.dayNight) rows.push(['TIME OF DAY', game.dayNight.toUpperCase()]);
