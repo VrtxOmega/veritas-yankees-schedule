@@ -11,7 +11,6 @@ import { MONTHS_SHORT, DAYS_SHORT, formatDay, formatWeekday,
          cacheGet, cacheSet } from './utils.js';
 import { isNearMeGame, getDistanceFromStL, getVenueForTeam, NEAR_ME_RADIUS } from './geo.js';
 import { getBroadcasts } from './api.js';
-import { openModal } from './modal.js';
 
 export let allGames = [];
 export let filteredGames = [];
@@ -210,10 +209,13 @@ export function renderSchedule(games, container, monthFilter) {
     });
   }
   container.querySelectorAll('.game-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', async () => {
       const pk = parseInt(card.dataset.pk);
       const game = allGames.find(g => g.gamePk === pk);
-      if (game) openModal(game);
+      if (game) {
+        const { openModal } = await import('./modal.js');
+        openModal(game);
+      }
     });
   });
 }
