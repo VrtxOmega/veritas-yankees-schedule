@@ -375,14 +375,19 @@ function renderFormGuide() {
       let won = nyy.isWinner;
 
       // Synthesize a result for placeholder games (deterministic per gamePk
-      // so reloads don't shuffle history).
-      if (won === null || won === undefined || nyyScore == null) {
+      // so reloads don't shuffle history). DO NOT synthesize for today's
+      // game — let the live API or manual sync resolve it to avoid "fake" wins.
+      const isActuallyToday = isToday(g.date);
+      if (!isActuallyToday && (won === null || won === undefined || nyyScore == null)) {
         const seed = (g.gamePk || 0) * 9301 + 49297;
         const r = ((seed % 233280) / 233280); // 0..1, deterministic
         won = r < 0.62; // ~62% win rate (Yankees pace for ~100W)
         nyyScore = won ? 4 + Math.floor(r * 6) : 1 + Math.floor(r * 4);
         oppScore = won ? Math.floor(r * 4) : 4 + Math.floor(r * 5);
       }
+      
+      // If still no winner/score (e.g. today's game not finalized), exclude from form.
+      if (won === null || won === undefined) return null;
       return {
         date: g.date,
         opp: opp.abbreviation || opp.name,
@@ -393,6 +398,7 @@ function renderFormGuide() {
         venue: g.venue?.name,
       };
     })
+    .filter(x => x !== null)
     .sort((a, b) => new Date(b.date) - new Date(a.date)); // newest first
 
   if (completed.length === 0) {
