@@ -16,13 +16,10 @@ import { openModal } from './modal.js';
 export let allGames = [];
 export let filteredGames = [];
 export let rivalryGames = { sox: [], mets: [], stl: [] };
-export let nearMeGames = [];
-
-const RIVALRY_TEAM_IDS = {
-  sox: 111,    // Boston Red Sox
-  mets: 121,   // New York Mets
   stl: 138,    // St. Louis Cardinals
 };
+
+let scheduleExpanded = false;
 
 export async function loadSchedule() {
   // Try cache first
@@ -157,7 +154,27 @@ export function renderSchedule(games, container, monthFilter) {
   }
 
   let html = '';
-  sortedDates.forEach(dateKey => {
+  const isMobile = window.innerWidth <= 768;
+  const isCurrentMonth = filteredGames.some(g => isToday(g.date));
+  
+  let datesToRender = sortedDates;
+  let showExpandBtn = false;
+
+  // On mobile, if we haven't expanded and we're looking at the current month,
+  // slice to show Today + 5 games.
+  if (isMobile && !scheduleExpanded && isCurrentMonth) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startIndex = sortedDates.findIndex(d => d >= todayStr);
+    
+    if (startIndex !== -1) {
+      datesToRender = sortedDates.slice(startIndex, startIndex + 6);
+      if (sortedDates.length > startIndex + 6) {
+        showExpandBtn = true;
+      }
+    }
+  }
+
+  datesToRender.forEach(dateKey => {
     const dayGames = grouped[dateKey];
     const d = new Date(dateKey + 'T12:00:00');
     html += `
@@ -171,9 +188,22 @@ export function renderSchedule(games, container, monthFilter) {
     });
   });
 
+  if (showExpandBtn) {
+    html += `
+      <button class="expand-schedule-btn" id="expandScheduleBtn">
+        VIEW FULL MONTH <span class="arrow">▾</span>
+      </button>`;
+  }
+
   container.innerHTML = html;
 
   // Attach click listeners
+  if (showExpandBtn) {
+    document.getElementById('expandScheduleBtn').addEventListener('click', () => {
+      scheduleExpanded = true;
+      renderSchedule();
+    });
+  }
   container.querySelectorAll('.game-card').forEach(card => {
     card.addEventListener('click', () => {
       const pk = parseInt(card.dataset.pk);
