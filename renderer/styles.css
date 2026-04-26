@@ -1625,3 +1625,61 @@ body::before {
   font-size: 13px;
 }
 .error-state svg { opacity: 0.5; }
+
+
+/* -----------------------------------------------------------------------------
+   MOBILE RESPONSIVENESS — SOVEREIGN PATCH v1.0
+----------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  body { overflow: auto; height: auto; min-height: 100vh; }
+  .app-main {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .sidebar-left, .sidebar-right {
+    border: none;
+    border-top: 1px solid var(--border-glass);
+    height: auto;
+    overflow: visible;
+  }
+  .schedule-section { height: auto; overflow: visible; }
+  .schedule-list { overflow: visible; height: auto; }
+}
+
+@media (max-width: 768px) {
+  .app-header { height: 64px; padding: 0 12px; }
+  .header-veritas { font-size: 9px; letter-spacing: 2px; }
+  .header-yankees { font-size: 14px; letter-spacing: 1px; }
+  .sync-info { display: none; }
+  
+  .game-card {
+    grid-template-columns: 60px 1fr 100px;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    padding: 12px;
+  }
+  .game-card-date { grid-row: span 2; }
+  .game-card-day { font-size: 22px; }
+  .game-card-matchup { grid-column: 2; }
+  .game-card-venue { display: none; } /* Hide venue on small mobile cards */
+  .game-card-at { grid-column: 3; text-align: right; }
+  
+  /* Month nav becomes a sticky scroll */
+  .month-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-center { display: none; } /* Hide live indicator on tiny screens to avoid overlap */
+  .game-card {
+    grid-template-columns: 50px 1fr 70px;
+  }
+  .game-card-opponent-name { font-size: 12px; }
+  .game-card-day { font-size: 18px; }
+}
+
