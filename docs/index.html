@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VERITAS ⦿ Yankees 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ─── HEADER ─────────────────────────────────────────── -->
+  <header class="app-header" id="appHeader">
+    <div class="header-left">
+      <div class="veritas-logo">
+        <span class="omega-mark">Ω</span>
+      </div>
+      <div class="header-titles">
+        <span class="header-veritas">VERITAS</span>
+        <span class="header-yankees">YANKEES 2026</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="live-indicator" id="liveIndicator" style="display:none">
+        <span class="live-dot"></span>
+        <span class="live-text">LIVE</span>
+        <span class="live-game-name" id="liveGameName"></span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="sync-info" id="syncInfo">
+        <span class="sync-time" id="syncTime"></span>
+      </div>
+      <button class="sync-btn" id="syncBtn" title="Sync now">
+        <svg class="sync-icon" id="syncIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        SYNC
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── MONTH NAV ──────────────────────────────────────── -->
+  <div class="news-bar" id="newsBar">
+    <span class="news-label">YANKEES <span class="news-label-divider">/</span> NEWS</span>
+    <div class="news-ticker" id="newsTicker">
+      <div class="news-empty">— Loading news —</div>
+    </div>
+  </div>
+
+  <nav class="month-nav" id="monthNav">
+    <button class="month-arrow month-arrow-left" id="monthArrowLeft">◀</button>
+    <div class="month-pills" id="monthPills"></div>
+    <button class="month-arrow month-arrow-right" id="monthArrowRight">▶</button>
+  </nav>
+
+  <!-- ─── MAIN LAYOUT ─────────────────────────────────────── -->
+  <main class="app-main" id="appMain">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar-left">
+      <!-- Today Game Hero -->
+      <section class="card today-hero" id="todayHero">
+        <div class="card-header">
+          <span class="card-title">TODAY'S GAME</span>
+          <span class="card-date" id="todayDate"></span>
+        </div>
+        <div class="today-content" id="todayContent">
+          <div class="no-game">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p>No game scheduled</p>
+            <p class="no-game-sub">Check the schedule below</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Standings -->
+      <section class="card standings-card" id="standingsCard">
+        <div class="card-header">
+          <span class="card-title">AL EAST STANDINGS</span>
+          <span class="card-subtitle" id="standingsDate"></span>
+        </div>
+        <div class="standings-table-wrap">
+          <table class="standings-table" id="standingsTable">
+            <thead>
+              <tr><th>#</th><th>TEAM</th><th>W</th><th>L</th><th>GB</th><th>STRK</th></tr>
+            </thead>
+            <tbody id="standingsBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <!-- Form Guide — last 5 results + most recent game line -->
+      <section class="card form-guide-card" id="formGuideCard">
+        <div class="card-header">
+          <span class="card-title">FORM GUIDE</span>
+          <span class="card-subtitle" id="formStreak"></span>
+        </div>
+        <div class="form-pills" id="formPills">
+          <span class="form-pill empty">—</span>
+          <span class="form-pill empty">—</span>
+          <span class="form-pill empty">—</span>
+          <span class="form-pill empty">—</span>
+          <span class="form-pill empty">—</span>
+        </div>
+        <div class="form-recent" id="formRecent">
+          <span class="form-recent-empty">No recent games</span>
+        </div>
+      </section>
+    </aside>
+    <section class="schedule-section">
+      <!-- Filter bar -->
+      <div class="schedule-toolbar">
+        <div class="filter-group">
+          <label class="filter-toggle" id="nearMeToggle">
+            <input type="checkbox" id="nearMeCheck" />
+            <span class="toggle-track"></span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF37" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            ★ Near Me
+          </label>
+          <label class="filter-toggle" id="liveToggle">
+            <input type="checkbox" id="liveCheck" />
+            <span class="toggle-track"></span>
+            <span class="live-dot-sm"></span>
+            Live Only
+          </label>
+        </div>
+        <div class="schedule-count" id="scheduleCount"></div>
+      </div>
+
+      <!-- Schedule list -->
+      <div class="schedule-list" id="scheduleList">
+        <div class="schedule-loading" id="scheduleLoading">
+          <div class="loading-spinner"></div>
+          <p>Loading 2026 schedule...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="sidebar-right">
+      <!-- Rivalry Tracker -->
+      <section class="card rivalry-card" id="rivalryCard">
+        <div class="card-header">
+          <span class="card-title">RIVALRY TRACKER</span>
+        </div>
+        <div class="rivalry-list" id="rivalryList">
+          <div class="rivalry-item" id="rivalry-sox">
+            <div class="rivalry-header">
+              <div class="rivalry-teams">
+                <span class="rivalry-team rivalry-yankees">NYY</span>
+                <span class="vs-badge">VS</span>
+                <span class="rivalry-team rivalry-redsox">BOS</span>
+              </div>
+              <div class="rivalry-record" id="soxRecord">--</div>
+            </div>
+            <div class="rivalry-next" id="soxNext">Loading...</div>
+          </div>
+          <div class="rivalry-item" id="rivalry-mets">
+            <div class="rivalry-header">
+              <div class="rivalry-teams">
+                <span class="rivalry-team rivalry-yankees">NYY</span>
+                <span class="vs-badge vs-subway">SUBWAY</span>
+                <span class="rivalry-team rivalry-mets">NYM</span>
+              </div>
+              <div class="rivalry-record" id="metsRecord">--</div>
+            </div>
+            <div class="rivalry-next" id="metsNext">Loading...</div>
+          </div>
+          <div class="rivalry-item rivalry-stl" id="rivalry-stl">
+            <div class="rivalry-header">
+              <div class="rivalry-teams">
+                <span class="rivalry-team rivalry-yankees">NYY</span>
+                <span class="vs-badge">INTER</span>
+                <span class="rivalry-team rivalry-cardinals">STL</span>
+              </div>
+              <div class="rivalry-record" id="stlRecord">--</div>
+            </div>
+            <div class="rivalry-next" id="stlNext">Loading...</div>
+            <div class="rivalry-distance" id="stlDistance"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Yankees Stats -->
+      <section class="card stats-card" id="statsCard">
+        <div class="card-header">
+          <span class="card-title">YANKEES STATS</span>
+          <span class="card-subtitle">2026 Season</span>
+        </div>
+        <div class="stats-record" id="statsRecord">
+          <div class="record-wins" id="statsWins">--</div>
+          <div class="record-sep">-</div>
+          <div class="record-losses" id="statsLosses">--</div>
+          <div class="record-pct" id="statsPct"></div>
+        </div>
+        <div class="stats-batters" id="statsBatters">
+          <div class="stat-row-header"><span>HR LEADERS</span></div>
+          <div id="battersList"></div>
+        </div>
+        <div class="stats-team" id="statsTeam">
+          <div class="stat-chip"><span class="stat-label">TEAM AVG</span><span class="stat-value" id="teamAvg">--</span></div>
+          <div class="stat-chip"><span class="stat-label">TEAM ERA</span><span class="stat-value" id="teamEra">--</span></div>
+        </div>
+      </section>
+
+      <!-- Near Me Map -->
+      <section class="card map-card" id="mapCard">
+        <div class="card-header map-card-header">
+          <span class="card-title" id="mapCardTitle">★ ST. LOUIS PROXIMITY</span>
+          <button class="map-edit-btn" id="mapEditBtn" title="Change ZIP code">✎</button>
+        </div>
+        <div class="map-zip-form" id="mapZipForm" hidden>
+          <input type="text" inputmode="numeric" maxlength="5" pattern="\d{5}"
+                 class="map-zip-input" id="mapZipInput" placeholder="Enter 5-digit ZIP" />
+          <button class="map-zip-submit" id="mapZipSubmit">SET</button>
+          <button class="map-zip-cancel" id="mapZipCancel">×</button>
+          <span class="map-zip-status" id="mapZipStatus"></span>
+        </div>
+        <div class="card-subtitle map-radius-sub">~350mi radius · click to enlarge</div>
+        <div class="nearme-map" id="nearMeMap" title="Click to enlarge"></div>
+      </section>
+    </aside>
+  </main>
+
+  <!-- ─── GAME DETAIL MODAL ──────────────────────────────── -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-panel" id="modalPanel">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="mapModalOverlay">
+    <div class="modal-panel modal-panel-map" id="mapModalPanel">
+      <button class="modal-close" id="mapModalClose">✕</button>
+      <div class="map-modal-header">
+        <span class="map-modal-title" id="mapModalTitle">PROXIMITY MAP</span>
+        <span class="map-modal-sub">350-mile radius from your home</span>
+      </div>
+      <div class="map-modal-canvas" id="mapModalCanvas"></div>
+      <div class="map-modal-legend">
+        <span><span class="legend-dot" style="background:#003087"></span> American League</span>
+        <span><span class="legend-dot" style="background:#C41E3A"></span> National League</span>
+        <span><span class="legend-dot" style="background:#D4AF37"></span> Your home</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OFFLINE BANNER ─────────────────────────────────── -->
+  <div class="offline-banner" id="offlineBanner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    OFFLINE — showing cached data
+  </div>
+
+  <script type="module" src="utils.js"></script>
+  <script type="module" src="geo.js"></script>
+  <script type="module" src="api.js"></script>
+  <script type="module" src="news.js"></script>
+  <script type="module" src="schedule.js"></script>
+  <script type="module" src="scores.js"></script>
+  <script type="module" src="modal.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
