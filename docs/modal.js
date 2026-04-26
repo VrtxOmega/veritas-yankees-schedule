@@ -34,18 +34,45 @@ export function closeModal() {
 
 async function downloadCalendar(game) {
   const ics = generateICS(game);
-  const result = await window.electronAPI.downloadICS(ics);
-  if (result.success) {
-    const btn = document.getElementById('modalCalendarBtn');
-    btn.textContent = '✓ SAVED';
-    btn.style.color = 'var(--green-live)';
-    setTimeout(() => { btn.textContent = 'ADD TO CALENDAR'; btn.style.color = ''; }, 2000);
+  
+  if (window.electronAPI?.downloadICS) {
+    const result = await window.electronAPI.downloadICS(ics);
+    if (result.success) {
+      updateCalendarBtn();
+    }
+  } else {
+    // Web fallback: Create a blob and download it
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `yankees-game-${game.gamePk || Date.now()}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    updateCalendarBtn();
   }
+}
+
+function updateCalendarBtn() {
+  const btn = document.getElementById('modalCalendarBtn');
+  if (!btn) return;
+  const original = btn.textContent;
+  btn.textContent = '✓ SAVED';
+  btn.style.color = 'var(--green-live)';
+  setTimeout(() => { btn.textContent = original; btn.style.color = ''; }, 2000);
 }
 
 function openTickets(game) {
   const query = encodeURIComponent(`${game.awayTeam.name} at ${game.homeTeam.name} ${formatDate(game.date)}`);
-  window.electronAPI.openExternal(`https://www.stubhub.com/search?q=${query}`);
+  const url = `https://www.stubhub.com/search?q=${query}`;
+  
+  if (window.electronAPI?.openExternal) {
+    window.electronAPI.openExternal(url);
+  } else {
+    window.open(url, '_blank');
+  }
 }
 
 function renderModalContent(game) {
