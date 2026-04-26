@@ -361,10 +361,19 @@ function renderFormGuide() {
     .filter(g => {
       const t = new Date(g.date).getTime();
       if (t > now) return false;
+      
       const status = g.status?.abstractGameState || g.abstractState;
       const detailed = g.status?.detailedState || g.detailedState;
-      // Real final game OR placeholder past game.
-      return status === 'Final' || detailed === 'Final' || g.scheduled === true;
+      
+      // If it's officially Final, count it.
+      if (status === 'Final' || detailed === 'Final') return true;
+      
+      // If it's past start time and has a score, count it in the form guide 
+      // (prevents the 15-minute "Finalizing" lag).
+      const hasScore = g.homeTeam.score !== null && g.awayTeam.score !== null;
+      if (hasScore && t < (now - 30 * 60 * 1000)) return true; // At least 30 mins since start
+
+      return g.scheduled === true;
     })
     .map(g => {
       const isHome = g.homeTeam.id === 147;
@@ -420,15 +429,17 @@ function renderFormGuide() {
     return `<span class="form-pill ${cls}" title="${tip}">${g.won ? 'W' : 'L'}</span>`;
   }).join('');
 
-  // Streak header.
-  let streakLen = 1;
-  const firstResult = completed[0].won;
-  for (let i = 1; i < completed.length; i++) {
-    if (completed[i].won === firstResult) streakLen++;
-    else break;
+  // Streak header - use the most recent game as the start.
+  if (completed.length > 0) {
+    let streakLen = 1;
+    const firstResult = completed[0].won;
+    for (let i = 1; i < completed.length; i++) {
+      if (completed[i].won === firstResult) streakLen++;
+      else break;
+    }
+    streakEl.textContent = `${firstResult ? 'W' : 'L'}${streakLen}`;
+    streakEl.className = firstResult ? 'win' : 'loss';
   }
-  streakEl.textContent = `${firstResult ? 'W' : 'L'}${streakLen}`;
-  streakEl.className = firstResult ? 'win' : 'loss';
 
   // Most recent game line.
   const last = completed[0];
