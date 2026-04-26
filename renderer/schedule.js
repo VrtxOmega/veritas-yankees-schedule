@@ -296,8 +296,10 @@ function renderGameCard(game, dateKey) {
         <span class="game-card-venue-city">${game.venue?.city || ''}</span>
         ${nearMe && distance !== null ? `<span class="game-card-distance">▲ ${distance}mi from StL</span>` : ''}
       </div>
-      ${statusHtml}
-      <div class="game-card-watch">${watchHtml || '<span class="watch-badge">MLB</span>'}</div>
+      <div class="game-card-info">
+        ${statusHtml}
+        <div class="game-card-watch">${watchHtml || '<span class="watch-badge">MLB.TV</span>'}</div>
+      </div>
     </div>`;
 }
 

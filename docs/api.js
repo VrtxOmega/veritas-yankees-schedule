@@ -114,14 +114,33 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
 }
 
 // ─── Data helpers ───────────────────────────────────────────────────────────
- export function getBroadcasts(game) {
+ function cleanBroadcastName(name) {
+  if (!name) return '';
+  const s = name.toUpperCase();
+  if (s.includes('APPLE')) return 'APPLE TV+';
+  if (s.includes('AMAZON') || s.includes('PRIME')) return 'PRIME';
+  if (s.includes('PEACOCK')) return 'PEACOCK';
+  if (s.includes('YES')) return 'YES';
+  if (s.includes('ESPN')) return 'ESPN';
+  if (s.includes('FOX')) return 'FOX';
+  if (s.includes('TBS')) return 'TBS';
+  if (s.includes('ROKU')) return 'ROKU';
+  if (s.includes('MLB')) return 'MLB.TV';
+  
+  // Truncate long TV station names
+  if (name.length > 10) {
+    return name.split(' ')[0].split('.')[0].substring(0, 8);
+  }
+  return name;
+}
+
+export function getBroadcasts(game) {
   const broadcasts = [];
   
-  // From /schedule hydrate=broadcasts
   if (game.broadcasts) {
     game.broadcasts.forEach(b => {
       if (b.type === 'TV') {
-        broadcasts.push(b.name);
+        broadcasts.push(cleanBroadcastName(b.name));
       }
     });
   }
