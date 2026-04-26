@@ -687,21 +687,21 @@ body::before {
 .game-card.today::after {
   content: 'TODAY';
   position: absolute;
-  top: 50%;
+  top: -10px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   font-family: var(--font-heading);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 4px;
   color: #000;
   background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
-  padding: 4px 12px;
+  padding: 4px 16px;
   border-radius: 2px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px var(--gold-glow);
-  z-index: 5;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px var(--gold-glow);
+  z-index: 50;
   pointer-events: none;
-  opacity: 0.95;
+  opacity: 1;
 }
 .game-card.today .game-card-day {
   color: var(--gold-light);
