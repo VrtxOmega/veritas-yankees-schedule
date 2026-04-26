@@ -1663,12 +1663,25 @@ body::before {
 }
 
 @media (max-width: 768px) {
-  .app-header { height: 64px; padding: 0 12px; }
-  .header-veritas { font-size: 8px; letter-spacing: 2px; }
-  .header-yankees { font-size: 14px; letter-spacing: 1px; }
-  .sync-info { display: none; }
+  body { overflow: auto !important; height: auto !important; min-height: 100vh !important; }
+  .app-main {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .sidebar-left, .sidebar-right {
+    width: 100% !important;
+    flex: none !important;
+    height: auto !important;
+    border: none !important;
+    border-top: 1px solid var(--border-glass) !important;
+  }
+  .schedule-section { height: auto !important; overflow: visible !important; flex: none !important; }
+  .schedule-list { overflow: visible !important; height: auto !important; }
   
   .game-card {
+    overflow: visible !important;
     grid-template-columns: 60px 1fr 100px;
     grid-template-rows: auto auto;
     gap: 8px;
