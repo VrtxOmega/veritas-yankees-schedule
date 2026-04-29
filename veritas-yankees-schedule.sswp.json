@@ -1,0 +1,120 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-04-29T07:20:11.443Z",
+  "target": {
+    "name": "veritas-yankees-schedule",
+    "repo": "/mnt/c/Veritas_Lab/veritas-yankees-schedule",
+    "commitHash": "9ec7df7c5c026f12afca96b88decac1c945994b6",
+    "branch": "main"
+  },
+  "environment": {
+    "nodeVersion": "v18.20.8",
+    "os": "linux",
+    "arch": "x64",
+    "ci": false
+  },
+  "dependencies": [
+    {
+      "name": "electron",
+      "version": "33.0.0",
+      "resolved": "/mnt/c/Veritas_Lab/veritas-yankees-schedule/node_modules/electron",
+      "integrity": "aa6b28f3a59fa3a0",
+      "suspicious": false,
+      "riskScore": 0.1
+    },
+    {
+      "name": "electron-builder",
+      "version": "26.0.0",
+      "resolved": "/mnt/c/Veritas_Lab/veritas-yankees-schedule/node_modules/electron-builder",
+      "integrity": null,
+      "suspicious": true,
+      "riskScore": 0.9
+    }
+  ],
+  "gates": [
+    {
+      "gate": "GIT_INTEGRITY",
+      "status": "FAIL",
+      "evidence": "Modified files: 4",
+      "durationMs": 117
+    },
+    {
+      "gate": "LOCKFILE",
+      "status": "PASS",
+      "evidence": "package-lock.json present",
+      "durationMs": 2
+    },
+    {
+      "gate": "DETERMINISTIC_BUILD",
+      "status": "INCONCLUSIVE",
+      "evidence": "No build command detected",
+      "durationMs": 0
+    },
+    {
+      "gate": "TEST_PASS",
+      "status": "FAIL",
+      "evidence": "Tests failed: npm error Missing script: \"test\"\nnpm error\nnpm error To see a list of scripts, run:\nnpm error   npm run\nnpm error A complete log of this run can be found in: /home/veritas/.npm/_logs/2026-04-29T07_20_",
+      "durationMs": 134
+    },
+    {
+      "gate": "LINT",
+      "status": "PASS",
+      "evidence": "npx passed",
+      "durationMs": 2247
+    }
+  ],
+  "adversarial": {
+    "totalPackages": 2,
+    "suspiciousPackages": 1,
+    "probes": [
+      {
+        "package": "electron",
+        "probe": "TYPO_SQUATTING",
+        "result": "PASS",
+        "detail": "Name heuristic clean"
+      },
+      {
+        "package": "electron",
+        "probe": "VERSION_ANOMALY",
+        "result": "PASS",
+        "detail": "Pinned: 33.0.0"
+      },
+      {
+        "package": "electron",
+        "probe": "METADATA_INTEGRITY",
+        "result": "PASS",
+        "detail": "Hash: aa6b28f3a59fa3a0"
+      },
+      {
+        "package": "electron-builder",
+        "probe": "TYPO_SQUATTING",
+        "result": "PASS",
+        "detail": "Name heuristic clean"
+      },
+      {
+        "package": "electron-builder",
+        "probe": "VERSION_ANOMALY",
+        "result": "PASS",
+        "detail": "Pinned: 26.0.0"
+      },
+      {
+        "package": "electron-builder",
+        "probe": "METADATA_INTEGRITY",
+        "result": "CRITICAL",
+        "detail": "No integrity hash found"
+      },
+      {
+        "package": "system",
+        "probe": "KIMI_REASONING",
+        "result": "INCONCLUSIVE",
+        "detail": "OLLAMA_CLOUD_API_KEY is not set. Skipping Kimi adversarial analysis."
+      }
+    ],
+    "overallRisk": 0.2
+  },
+  "seal": {
+    "chainHash": "15c31474abcc1b71250a46e9dc1c018816809603a5e67051968004f224bb0c34",
+    "sequence": 5
+  },
+  "signature": "b05b6fcd197d86fbbc3a3e7427e459a4c3b3f91c46c2ce00d1dd8d4ef254cf7a"
+}
