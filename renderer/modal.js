@@ -2,7 +2,7 @@
 
 import { formatDate, formatTime, generateICS, getLocalTimezone } from './utils.js';
 import { getGameStatus } from './schedule.js';
-import { getProbablePitchers, getBroadcasts } from './api.js';
+import { getProbablePitchers, getBroadcastGroups } from './api.js';
 
 let isOpen = false;
 
@@ -18,6 +18,7 @@ export function openModal(game) {
   // Attach event listeners
   content.querySelector('#modalCalendarBtn')?.addEventListener('click', () => downloadCalendar(game));
   content.querySelector('#modalTicketsBtn')?.addEventListener('click', () => openTickets(game));
+  content.querySelector('#modalGamedayBtn')?.addEventListener('click', () => openGameday(game));
 
   // Close on overlay click
   overlay.onclick = (e) => {
@@ -76,6 +77,16 @@ function openTickets(game) {
   }
 }
 
+function openGameday(game) {
+  const url = `https://www.mlb.com/gameday/${game.gamePk}`;
+
+  if (window.electronAPI?.openExternal) {
+    window.electronAPI.openExternal(url);
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
 function renderModalContent(game) {
   const status = getGameStatus(game);
   const isNYYHome = game.homeTeam.id === 147;
@@ -84,25 +95,17 @@ function renderModalContent(game) {
   const oppTeam = isNYYHome ? game.awayTeam : game.homeTeam;
   const nyyScore = nyyTeam.score ?? 0;
   const oppScore = oppTeam.score ?? 0;
-  const broadcasts = getBroadcasts(game);
+  const broadcasts = getBroadcastGroups(game);
 
   const d = new Date(game.date);
   const monthName = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
   const dayNum = d.getDate();
 
-  // Probable pitchers (would come from API in live version)
+  const pitchers = getProbablePitchers(game);
   const pitchersHtml = `
     <div class="modal-pitchers">
-      <div class="modal-pitcher">
-        <div class="modal-pitcher-role">AWAY</div>
-        <div class="modal-pitcher-name">${oppTeam.name} Starter</div>
-        <div class="modal-pitcher-stat">TBD</div>
-      </div>
-      <div class="modal-pitcher">
-        <div class="modal-pitcher-role">HOME</div>
-        <div class="modal-pitcher-name">Yankees Starter</div>
-        <div class="modal-pitcher-stat">TBD</div>
-      </div>
+      ${renderPitcherCard('AWAY', game.awayTeam, pitchers.away)}
+      ${renderPitcherCard('HOME', game.homeTeam, pitchers.home)}
     </div>`;
 
   // Score display
@@ -136,14 +139,14 @@ function renderModalContent(game) {
       </div>`;
   }
 
-  // Weather (mock for now — MLB API has weather in gameData)
+  // Weather is intentionally not faked. Add a real weather source before
+  // showing forecast claims here.
   const weatherHtml = `
-    <div class="modal-weather">
-      <div class="modal-weather-icon">☀️</div>
+    <div class="modal-weather modal-weather-unavailable">
+      <div class="modal-weather-icon">WX</div>
       <div>
-        <div class="modal-weather-temp">72°F</div>
-        <div class="modal-weather-desc">Clear</div>
-        <div class="modal-weather-wind">Wind: 8mph L</div>
+        <div class="modal-weather-temp">Forecast unavailable</div>
+        <div class="modal-weather-desc">No connected weather source yet</div>
       </div>
     </div>`;
 
@@ -186,21 +189,57 @@ function renderModalContent(game) {
       ${weatherHtml}
     </div>
 
-    ${broadcasts.length > 0 ? `
+    ${broadcasts.all.length > 0 ? `
     <div class="modal-section">
-      <div class="modal-section-title">WATCH</div>
-      <div style="display:flex;gap:8px;">
-        ${broadcasts.map(b => `<span class="watch-badge">${b}</span>`).join('')}
-      </div>
+      <div class="modal-section-title">BROADCASTS</div>
+      ${renderBroadcastList('TV', broadcasts.tv)}
+      ${renderBroadcastList('RADIO', broadcasts.radio)}
     </div>` : ''}
 
     <div class="modal-actions">
       <button class="modal-btn modal-btn-secondary" id="modalTicketsBtn">
-        🎟️ TICKETS
+        TICKETS
+      </button>
+      <button class="modal-btn modal-btn-secondary" id="modalGamedayBtn">
+        MLB GAMEDAY
       </button>
       <button class="modal-btn modal-btn-primary" id="modalCalendarBtn">
-        📅 ADD TO CALENDAR
+        ADD TO CALENDAR
       </button>
+    </div>
+  `;
+}
+
+function renderPitcherCard(role, team, pitcher) {
+  return `
+    <div class="modal-pitcher">
+      <div class="modal-pitcher-role">${role} · ${escapeHtml(team.abbreviation || '')}</div>
+      <div class="modal-pitcher-name">${escapeHtml(pitcher?.fullName || 'TBD')}</div>
+      <div class="modal-pitcher-stat">${pitcher ? 'Probable starter' : 'Probable starter not posted'}</div>
+    </div>
+  `;
+}
+
+function renderBroadcastList(label, items) {
+  if (!items.length) {
+    return `
+      <div class="modal-broadcast-row">
+        <span class="modal-broadcast-label">${label}</span>
+        <span class="watch-badge muted">TBD</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="modal-broadcast-row">
+      <span class="modal-broadcast-label">${label}</span>
+      <div class="modal-broadcast-badges">
+        ${items.map(b => `
+          <span class="watch-badge ${b.type === 'RADIO' ? 'radio' : ''}" title="${escapeAttr(b.fullName || b.name)}">
+            ${escapeHtml(b.name)}${b.availableForStreaming ? '<span class="stream-dot">STREAM</span>' : ''}
+          </span>
+        `).join('')}
+      </div>
     </div>
   `;
 }
@@ -246,3 +285,10 @@ function getTeamColor(abbr) {
 }
 
 window.openModal = openModal;
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+function escapeAttr(str) { return escapeHtml(str); }

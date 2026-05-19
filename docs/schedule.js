@@ -10,7 +10,7 @@ import { MONTHS_SHORT, DAYS_SHORT, formatDay, formatWeekday,
          formatTime, isToday, getMonthIndex, pluralize,
          cacheGet, cacheSet } from './utils.js';
 import { isNearMeGame, getDistanceFromStL, getVenueForTeam, NEAR_ME_RADIUS } from './geo.js';
-import { getBroadcasts } from './api.js';
+import { getBroadcastGroups } from './api.js';
 
 export let allGames = [];
 export let filteredGames = [];
@@ -105,26 +105,30 @@ export function getLiveGames() {
 }
 
 export function getGameStatus(game) {
-  const status = game.status?.statusCode || game.status?.abstractGameState;
-  const detailed = game.status?.detailedState;
+  const status = typeof game.status === 'string'
+    ? game.status
+    : (game.status?.statusCode || game.status?.abstractGameState || game.statusCode);
+  const detailed = typeof game.status === 'string'
+    ? game.detailedState
+    : (game.status?.detailedState || game.detailedState);
   if (detailed === 'In Progress' || status === 'L' || status === 'I') return 'LIVE';
-  if (detailed === 'Final' || status === 'F' || status === 'FT') return 'FINAL';
+  if (detailed === 'Final' || status === 'F' || status === 'FT' || status === 'Final') return 'FINAL';
   return 'UPCOMING';
 }
 
 export function getRivalryRecord(rivalryArr) {
   const nyy = rivalryArr.filter(g => g.homeTeam.id === 147 || g.awayTeam.id === 147);
-  const won = nyy.filter(g => {
+  const played = nyy.filter(g => getGameStatus(g) === 'FINAL');
+  const won = played.filter(g => {
     if (g.homeTeam.id === 147) return g.homeTeam.isWinner;
     if (g.awayTeam.id === 147) return g.awayTeam.isWinner;
     return false;
   });
-  const lost = nyy.filter(g => {
+  const lost = played.filter(g => {
     if (g.homeTeam.id === 147) return !g.homeTeam.isWinner;
     if (g.awayTeam.id === 147) return !g.awayTeam.isWinner;
     return false;
   });
-  const played = nyy.filter(g => getGameStatus(g) === 'FINAL');
   if (played.length === 0) return null;
   return { won: won.length, lost: lost.length };
 }
@@ -157,38 +161,36 @@ export function renderSchedule(games, container, monthFilter) {
     return;
   }
 
-  let html = '';
   const isMobile = window.innerWidth <= 768;
-  const isCurrentMonth = filteredGames.some(g => isToday(g.date));
-  
-  let datesToRender = sortedDates;
+  const isCurrentMonth = monthFilter === new Date().getMonth();
+  let sections = buildScheduleSections(sortedDates, monthFilter);
   let showExpandBtn = false;
 
-  // On mobile, if we haven't expanded and we're looking at the current month,
-  // slice to show Today + 5 games.
+  const totalDateCount = sections.reduce((sum, section) => sum + section.dates.length, 0);
   if (isMobile && !scheduleExpanded && isCurrentMonth) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const startIndex = sortedDates.findIndex(d => d >= todayStr);
-    
-    if (startIndex !== -1) {
-      datesToRender = sortedDates.slice(startIndex, startIndex + 6);
-      if (sortedDates.length > startIndex + 6) {
-        showExpandBtn = true;
-      }
-    }
+    sections = limitScheduleSections(sections, 6);
+    const visibleDateCount = sections.reduce((sum, section) => sum + section.dates.length, 0);
+    showExpandBtn = totalDateCount > visibleDateCount;
   }
 
-  datesToRender.forEach(dateKey => {
-    const dayGames = grouped[dateKey];
-    const d = new Date(dateKey + 'T12:00:00');
-    html += `
-      <div class="game-date-divider">
-        <span class="game-date-divider-date">${DAYS_SHORT[d.getDay()]} · ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}</span>
-        <div class="game-date-divider-line"></div>
-      </div>`;
+  let html = '';
+  sections.forEach(section => {
+    if (section.label) {
+      html += `<div class="schedule-section-divider">${section.label}</div>`;
+    }
 
-    dayGames.forEach(game => {
-      html += renderGameCard(game, dateKey);
+    section.dates.forEach(dateKey => {
+      const dayGames = grouped[dateKey];
+      const d = new Date(dateKey + 'T12:00:00');
+      html += `
+        <div class="game-date-divider">
+          <span class="game-date-divider-date">${DAYS_SHORT[d.getDay()]} · ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}</span>
+          <div class="game-date-divider-line"></div>
+        </div>`;
+
+      dayGames.forEach(game => {
+        html += renderGameCard(game, dateKey);
+      });
     });
   });
 
@@ -205,7 +207,7 @@ export function renderSchedule(games, container, monthFilter) {
   if (showExpandBtn) {
     document.getElementById('expandScheduleBtn').addEventListener('click', () => {
       scheduleExpanded = true;
-      renderSchedule();
+      renderSchedule(games, container, monthFilter);
     });
   }
   container.querySelectorAll('.game-card').forEach(card => {
@@ -218,6 +220,47 @@ export function renderSchedule(games, container, monthFilter) {
       }
     });
   });
+}
+
+function buildScheduleSections(sortedDates, monthFilter) {
+  const currentMonth = new Date().getMonth();
+  if (monthFilter !== currentMonth) {
+    return [{ label: '', dates: sortedDates }];
+  }
+
+  const todayKey = localDateKey(new Date());
+  const todayAndUpcoming = sortedDates.filter(d => d >= todayKey);
+  const earlier = sortedDates.filter(d => d < todayKey).reverse();
+
+  const sections = [];
+  if (todayAndUpcoming.length) {
+    sections.push({ label: 'TODAY / UPCOMING', dates: todayAndUpcoming });
+  }
+  if (earlier.length) {
+    sections.push({ label: 'EARLIER THIS MONTH', dates: earlier });
+  }
+  return sections.length ? sections : [{ label: '', dates: sortedDates }];
+}
+
+function limitScheduleSections(sections, maxDates) {
+  const out = [];
+  let remaining = maxDates;
+  for (const section of sections) {
+    if (remaining <= 0) break;
+    const dates = section.dates.slice(0, remaining);
+    if (dates.length) {
+      out.push({ ...section, dates });
+      remaining -= dates.length;
+    }
+  }
+  return out;
+}
+
+function localDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function renderGameCard(game, dateKey) {
@@ -236,21 +279,7 @@ function renderGameCard(game, dateKey) {
   const nearMe = venue ? venue.dist !== null && venue.dist <= NEAR_ME_RADIUS : false;
   const distance = venue?.dist ?? (game.venue?.lat ? getDistanceFromStL(game.venue.lat, game.venue.lng) : null);
 
-    const broadcasts = getBroadcasts(game) || [];
-  const watchHtml = broadcasts.map(b => {
-    const s = b.toUpperCase();
-    const cls = s.includes('ESPN') ? 'espn' :
-                s.includes('YES') ? 'yes' :
-                s.includes('MLB') ? 'mlb' :
-                (s.includes('FOX') || s.includes('FS1')) ? 'fox' :
-                s.includes('APPLE') ? 'apple' :
-                (s.includes('PRIME') || s.includes('AMAZON')) ? 'prime' :
-                s.includes('PEACOCK') ? 'peacock' :
-                s.includes('TBS') ? 'tbs' :
-                s.includes('ROKU') ? 'roku' :
-                s.includes('PIX') ? 'fox' : ''; // Default PIX to blueish if no specific color
-    return `<span class="watch-badge ${cls}">${b}</span>`;
-  }).join('');
+  const watchHtml = renderBroadcastBadges(game);
 
   let statusHtml = '';
   if (status === 'FINAL') {
@@ -303,6 +332,47 @@ function renderGameCard(game, dateKey) {
       </div>
     </div>`;
 }
+
+function renderBroadcastBadges(game) {
+  const groups = getBroadcastGroups(game);
+  const badges = [
+    ...groups.tv.slice(0, 2),
+    ...groups.radio.slice(0, 2),
+  ];
+
+  if (!badges.length) {
+    return '<span class="watch-badge muted">BCAST TBD</span>';
+  }
+
+  return badges.map(b => {
+    const cls = broadcastClass(b);
+    const prefix = b.type === 'RADIO' ? 'RADIO ' : '';
+    const title = `${b.fullName || b.name}${b.availableForStreaming ? ' - streaming listed' : ''}`;
+    return `<span class="watch-badge ${cls}" title="${escapeAttr(title)}">${prefix}${escapeHtml(b.name)}</span>`;
+  }).join('');
+}
+
+function broadcastClass(b) {
+  const s = b.name.toUpperCase();
+  if (b.type === 'RADIO') return 'radio';
+  if (s.includes('ESPN')) return 'espn';
+  if (s.includes('YES')) return 'yes';
+  if (s.includes('MLB')) return 'mlb';
+  if (s.includes('FOX') || s.includes('FS1') || s.includes('PIX')) return 'fox';
+  if (s.includes('APPLE')) return 'apple';
+  if (s.includes('PRIME') || s.includes('AMAZON')) return 'prime';
+  if (s.includes('PEACOCK')) return 'peacock';
+  if (s.includes('TBS')) return 'tbs';
+  if (s.includes('ROKU')) return 'roku';
+  return '';
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+function escapeAttr(str) { return escapeHtml(str); }
 
 // ─── Placeholder schedule for offseason / pre-launch ──────────────────────
 function generatePlaceholderSchedule() {
@@ -387,6 +457,7 @@ function generatePlaceholderSchedule() {
         dateStr,
         type: 'R',
         status: 'S',
+        statusCode: 'S',
         detailedState: 'Scheduled',
         abstractState: 'Preview',
         scheduled: true,
@@ -401,6 +472,8 @@ function generatePlaceholderSchedule() {
         dayNight: hour > 17 ? 'night' : 'day',
         firstPitch: date,
         seriesDescription: 'Regular Season',
+        probablePitcher: { home: null, away: null },
+        broadcasts: [],
       });
       gameNum++;
     });

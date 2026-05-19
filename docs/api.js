@@ -1,11 +1,13 @@
 /* ─── api.js — MLB Stats API v1 client ───────────────────────────────────── */
 
-const BASE = 'https://statsapi.mlb.com/api/v1';
+const API_ROOT = 'https://statsapi.mlb.com/api';
+const BASE = `${API_ROOT}/v1`;
 const TEAM_ID = 147; // Yankees
+const SEASON = 2026;
 
 // ─── Core fetch helper ─────────────────────────────────────────────────────
 async function mlbFetch(path) {
-  const url = BASE + path;
+  const url = path.startsWith('http') ? path : BASE + path;
   if (window.electronAPI?.fetchMLB) {
     return window.electronAPI.fetchMLB(url);
   }
@@ -24,9 +26,9 @@ export async function fetchSchedule() {
   try {
     // /schedule endpoint with proper hydration. team includes abbreviation;
     // venue includes location/coordinates; gameData is irrelevant for /schedule.
-    const path = `/schedule?sportId=1&season=2026&teamId=${TEAM_ID}` +
-                 `&startDate=2026-03-01&endDate=2026-11-15` +
-                 `&hydrate=team,venue(location),broadcasts`;
+    const path = `/schedule?sportId=1&season=${SEASON}&teamId=${TEAM_ID}` +
+                 `&startDate=${SEASON}-03-01&endDate=${SEASON}-11-15` +
+                 `&hydrate=team,venue(location),broadcasts,probablePitcher`;
     const data = await mlbFetch(path);
     console.log('[API] fetchSchedule got', data?.totalGames, 'games across', data?.dates?.length, 'dates');
     return { ok: true, data };
@@ -38,7 +40,7 @@ export async function fetchSchedule() {
 
 export async function fetchLiveGame(gamePk) {
   try {
-    const path = `/v1.1/game/${gamePk}/feed/live`;
+    const path = `${API_ROOT}/v1.1/game/${gamePk}/feed/live`;
     const data = await mlbFetch(path);
     return { ok: true, data };
   } catch (e) {
@@ -48,7 +50,7 @@ export async function fetchLiveGame(gamePk) {
 
 export async function fetchStandings() {
   try {
-    const path = `/standings?season=2026&leagueId=103&hydrate=team`;
+    const path = `/standings?season=${SEASON}&leagueId=103&hydrate=team`;
     const data = await mlbFetch(path);
     return { ok: true, data };
   } catch (e) {
@@ -56,9 +58,9 @@ export async function fetchStandings() {
   }
 }
 
-export async function fetchTeamRoster() {
+export async function fetchTeamRoster(rosterType = 'active') {
   try {
-    const path = `/teams/${TEAM_ID}/roster?rosterType=40Man`;
+    const path = `/teams/${TEAM_ID}/roster?rosterType=${encodeURIComponent(rosterType)}`;
     const data = await mlbFetch(path);
     return { ok: true, data };
   } catch (e) {
@@ -68,7 +70,7 @@ export async function fetchTeamRoster() {
 
 export async function fetchPlayerStats(playerId) {
   try {
-    const path = `/people/${playerId}/stats?stats=season&season=2026`;
+    const path = `/people/${playerId}/stats?stats=season&season=${SEASON}`;
     const data = await mlbFetch(path);
     return { ok: true, data };
   } catch (e) {
@@ -114,9 +116,17 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
 }
 
 // ─── Data helpers ───────────────────────────────────────────────────────────
- function cleanBroadcastName(name) {
+function cleanBroadcastName(name, medium = 'TV') {
   if (!name) return '';
   const s = name.toUpperCase();
+  if (medium === 'RADIO') {
+    if (s.includes('WFAN')) return 'WFAN';
+    if (s.includes('WADO')) return 'WADO';
+    if (s.includes('SN590')) return 'SN590';
+    if (s.includes('THE FAN')) return name.replace(/\s+/g, ' ').trim().toUpperCase();
+    if (s.includes('RADIO NETWORK')) return name.replace(/\s+NETWORK/i, '').trim().toUpperCase();
+    return name.replace(/\s+/g, ' ').trim().toUpperCase();
+  }
   if (s.includes('APPLE')) return 'APPLE TV+';
   if (s.includes('AMAZON') || s.includes('PRIME')) return 'PRIME';
   if (s.includes('PEACOCK')) return 'PEACOCK';
@@ -126,6 +136,7 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
   if (s.includes('FS1')) return 'FS1';
   if (s.includes('TBS')) return 'TBS';
   if (s.includes('ROKU')) return 'ROKU';
+  if (s.includes('SPORTSNET')) return 'SN';
   if (s.includes('PIX11') || s.includes('WPIX')) return 'PIX11';
   if (s.includes('MLB')) return 'MLB.TV';
   
@@ -136,45 +147,70 @@ export async function fetchTeamHRLeaders(season = 2026, limit = 5) {
   return name;
 }
 
-export function getBroadcasts(game) {
-  const broadcasts = [];
-  
-  if (game.broadcasts && game.broadcasts.length > 0) {
-    game.broadcasts.forEach(b => {
-      // Include TV and also 'National' or just any name that looks like a station
-      const name = cleanBroadcastName(b.name);
-      if (name) broadcasts.push(name);
-    });
-  }
-  
-  // Smart Defaults for Yankees 2026 if API is sparse
-  if (broadcasts.length === 0 || (broadcasts.length === 1 && broadcasts[0] === 'MLB.TV')) {
-    const d = new Date(game.date);
-    const day = d.getDay(); // 0=Sun, 5=Fri
-    
-    // Most Yankees games are on YES
-    if (!broadcasts.includes('YES')) {
-       // Only add if not a clear national game day/opponent
-       broadcasts.unshift('YES');
-    }
-    
-    // 2026 Specific Patterns
-    if (day === 5) broadcasts.push('APPLE TV+'); // Friday Night Baseball
-    if (day === 3) broadcasts.push('PRIME');    // Amazon Prime Wednesdays
-  }
+function normalizeBroadcast(b) {
+  const rawName = b?.name || b?.callSign || '';
+  const rawType = String(b?.type || '').toUpperCase();
+  const medium = rawType === 'AM' || rawType === 'FM' || /RADIO|WFAN|WADO|\bAM\b|\bFM\b|THE FAN/.test(rawName.toUpperCase())
+    ? 'RADIO'
+    : 'TV';
+  const name = cleanBroadcastName(rawName, medium);
+  return {
+    name,
+    fullName: rawName,
+    type: medium,
+    band: rawType,
+    language: b?.language || '',
+    homeAway: b?.homeAway || '',
+    isNational: !!b?.isNational,
+    availableForStreaming: !!b?.availableForStreaming,
+    callSign: b?.callSign || '',
+    mediaId: b?.mediaId || '',
+  };
+}
 
-  return [...new Set(broadcasts)].slice(0, 3);
+function dedupeBroadcasts(items) {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = `${item.type}:${item.name}:${item.language}`;
+    if (!item.name || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function sortBroadcastsForYankees(game, items) {
+  const nyySide = game.homeTeam?.id === TEAM_ID ? 'home'
+                : game.awayTeam?.id === TEAM_ID ? 'away'
+                : '';
+  return [...items].sort((a, b) => {
+    const aNyy = a.homeAway === nyySide ? 0 : 1;
+    const bNyy = b.homeAway === nyySide ? 0 : 1;
+    if (aNyy !== bNyy) return aNyy - bNyy;
+    const aEn = a.language === 'en' ? 0 : 1;
+    const bEn = b.language === 'en' ? 0 : 1;
+    if (aEn !== bEn) return aEn - bEn;
+    const aNat = a.isNational ? 1 : 0;
+    const bNat = b.isNational ? 1 : 0;
+    return aNat - bNat;
+  });
+}
+
+export function getBroadcastGroups(game) {
+  const normalized = dedupeBroadcasts((game.broadcasts || []).map(normalizeBroadcast));
+  const tv = sortBroadcastsForYankees(game, normalized.filter(b => b.type === 'TV'));
+  const radio = sortBroadcastsForYankees(game, normalized.filter(b => b.type === 'RADIO'));
+  return { tv, radio, all: [...tv, ...radio] };
+}
+
+export function getBroadcasts(game, limit = 4) {
+  return getBroadcastGroups(game).all.slice(0, limit).map(b => b.name);
 }
 
 export function getProbablePitchers(game) {
-  const pitchers = { home: null, away: null };
-  const gameData = game.gameData || {};
-  const probables = gameData.probablePitchers || [];
-  probables.forEach(p => {
-    if (p.team?.id === gameData.teams?.home?.id) pitchers.home = p;
-    if (p.team?.id === gameData.teams?.away?.id) pitchers.away = p;
-  });
-  return pitchers;
+  return {
+    home: game.probablePitcher?.home || null,
+    away: game.probablePitcher?.away || null,
+  };
 }
 
 export function extractGames(scheduleData) {
@@ -194,6 +230,7 @@ export function extractGames(scheduleData) {
     });
   });
 
+  games.sort((a, b) => new Date(a.date) - new Date(b.date));
   return { games, offseason: games.length === 0 };
 }
 
@@ -211,7 +248,8 @@ function normalizeGame(g, dateStr) {
     date: g.gameDate,
     dateStr,
     type: g.gameType || 'R',
-    status: status.statusCode || 'S',
+    status,
+    statusCode: status.statusCode || 'S',
     detailedState: status.detailedState || status.abstractGameState || 'Scheduled',
     abstractState: status.abstractGameState || 'Scheduled',
     scheduled: status.statusCode === 'S' || status.statusCode === 'PRE' || !status.statusCode,
@@ -248,9 +286,22 @@ function normalizeGame(g, dateStr) {
     dayNight: g.dayNight,
     firstPitch: g.gameDate,
     seriesDescription: g.seriesDescription,
+    probablePitcher: {
+      home: normalizePerson(teams.home?.probablePitcher),
+      away: normalizePerson(teams.away?.probablePitcher),
+    },
     broadcasts: g.broadcasts || [],
     content: g.content || {}
   };
 }
 
-export { TEAM_ID };
+function normalizePerson(person) {
+  if (!person) return null;
+  return {
+    id: person.id,
+    fullName: person.fullName || person.name,
+    link: person.link,
+  };
+}
+
+export { TEAM_ID, SEASON };
