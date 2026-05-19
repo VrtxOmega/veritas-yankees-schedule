@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('no-sandbox');
 const path = require('path');
 
 let mainWindow;

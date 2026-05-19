@@ -10,8 +10,10 @@ import { loadSchedule, filteredGames, allGames, rivalryGames, nearMeGames,
          getRivalryRecord, getNextRivalryGame, renderSchedule,
          getLiveGames as schedGetLiveGames } from './schedule.js';
 import { startScorePolling, stopScorePolling, renderTodayHero } from './scores.js';
-import { fetchStandings, fetchTeamRoster, fetchPlayerStats,
-         fetchTeamSeasonStats, fetchTeamHRLeaders } from './api.js';
+import { fetchStandings, fetchTeamSeasonStats, fetchTeamHRLeaders } from './api.js';
+import { renderRoster } from './roster.js';
+import { startPitchCastPolling, stopPitchCastPolling, refreshPitchCast } from './live.js';
+import { initRadioBooth, refreshRadioBooth } from './radio.js';
 import { MONTHS, MONTHS_SHORT, getMonthIndex, isToday } from './utils.js';
 import { getMapSvg, NEAR_ME_VENUES, getDistanceFromStL,
          userHome, setUserHome, lookupZip } from './geo.js';
@@ -57,8 +59,12 @@ async function init() {
     console.log('[init] renderNearMeMap done');
     await renderBatters();
     console.log('[init] renderBatters done');
+    await renderRoster();
+    console.log('[init] renderRoster done');
     renderFormGuide();
     console.log('[init] renderFormGuide done');
+    initRadioBooth();
+    console.log('[init] initRadioBooth done');
 
     // News ticker — don't block init on it.
     loadNews().then(items => renderNewsTicker(items)).catch(e => console.warn('[news]', e));
@@ -76,6 +82,7 @@ async function init() {
 
     // Start score polling
     startScorePolling(onLiveUpdate);
+    startPitchCastPolling();
     console.log('[init] ALL DONE');
 
     // Auto-refresh every 60s
@@ -87,6 +94,8 @@ async function init() {
       showSyncSpinner(false);
       renderRivalries();
       renderFormGuide();
+      refreshPitchCast();
+      refreshRadioBooth();
     }, 60000);
 
     // Filter listeners
@@ -101,11 +110,13 @@ async function init() {
       updateSyncTime();
       showSyncSpinner(false);
       renderAll();
+      await renderRoster();
     });
 
     // Month nav arrows
     document.getElementById('monthArrowLeft').addEventListener('click', () => scrollMonth(-1));
     document.getElementById('monthArrowRight').addEventListener('click', () => scrollMonth(1));
+    document.getElementById('todayBtn')?.addEventListener('click', jumpToToday);
 
     wireMapInteractions();
 
@@ -113,8 +124,10 @@ async function init() {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         stopScorePolling();
+        stopPitchCastPolling();
       } else {
         startScorePolling(onLiveUpdate);
+        startPitchCastPolling();
       }
     });
   } catch (e) {
@@ -171,11 +184,29 @@ function scrollMonth(dir) {
 function renderScheduleForMonth(monthIndex) {
   const container = document.getElementById('scheduleList');
   const games = getGamesByMonth(monthIndex);
+  const currentMonth = monthIndex === new Date().getMonth();
+  const todayKey = localDateKey(new Date());
+  const upcoming = currentMonth
+    ? games.filter(g => (g.dateStr || localDateKey(new Date(g.date))) >= todayKey).length
+    : games.filter(g => new Date(g.date).getTime() >= Date.now()).length;
 
   document.getElementById('scheduleCount').textContent =
-    `${games.length} game${games.length !== 1 ? 's' : ''} · ${MONTHS[monthIndex]}`;
+    currentMonth
+      ? `${games.length} game${games.length !== 1 ? 's' : ''} · ${MONTHS[monthIndex]} · ${upcoming} upcoming`
+      : `${games.length} game${games.length !== 1 ? 's' : ''} · ${MONTHS[monthIndex]}`;
 
   renderSchedule(games, container, monthIndex);
+}
+
+function jumpToToday() {
+  const monthIndex = new Date().getMonth();
+  selectMonth(monthIndex);
+  requestAnimationFrame(() => {
+    const todayCard = document.querySelector('.game-card.today');
+    if (todayCard) {
+      todayCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
 }
 
 // ─── Standings ──────────────────────────────────────────────────────────────
@@ -562,6 +593,8 @@ function onLiveUpdate(updates) {
 
     // Update live indicator in header
     updateLiveIndicator();
+    refreshPitchCast();
+    refreshRadioBooth();
   });
 }
 
@@ -588,6 +621,8 @@ function renderAll() {
   renderTodayHero(getGamesForToday());
   renderRivalries();
   renderFormGuide();
+  refreshPitchCast();
+  refreshRadioBooth();
 }
 
 function updateSyncTime() {
@@ -609,15 +644,29 @@ function showOfflineBanner(on) {
 }
 
 function getGameStatus(game) {
-  const status = game.status;
+  const status = typeof game.status === 'string'
+    ? game.status
+    : (game.status?.statusCode || game.status?.abstractGameState || game.statusCode);
+  const detailed = typeof game.status === 'string'
+    ? game.detailedState
+    : (game.status?.detailedState || game.detailedState);
   if (game.scheduled === false) {
     if (status === 'FINAL' || status === 'F') return 'FINAL';
     if (status === 'LIVE' || status === 'I' || status === 'L') return 'LIVE';
   }
+  if (detailed === 'In Progress' || status === 'I' || status === 'L') return 'LIVE';
+  if (detailed === 'Final' || status === 'F' || status === 'FT' || status === 'Final') return 'FINAL';
   if (game.scheduled === true) return 'UPCOMING';
   return game.abstractState === 'Final' ? 'FINAL'
        : game.abstractState === 'Live' ? 'LIVE'
        : 'UPCOMING';
+}
+
+function localDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function formatDateShort(dateStr) {

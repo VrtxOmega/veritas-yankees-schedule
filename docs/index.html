@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=3.0" />
+  <link rel="stylesheet" href="styles.css?v=3.1" />
 </head>
 <body>
 
@@ -80,6 +80,36 @@
         </div>
       </section>
 
+      <!-- Live PitchCast -->
+      <section class="card pitchcast-card" id="pitchCastCard">
+        <div class="card-header">
+          <span class="card-title">PITCHCAST</span>
+          <span class="card-subtitle" id="pitchCastStatus">NEXT</span>
+        </div>
+        <div class="pitchcast-content" id="pitchCastContent">
+          <div class="pitchcast-empty">Loading live feed...</div>
+        </div>
+      </section>
+
+      <!-- Radio Booth -->
+      <section class="card radio-card" id="radioCard">
+        <div class="card-header">
+          <span class="card-title">RADIO BOOTH</span>
+          <span class="card-subtitle">WFAN</span>
+        </div>
+        <div class="radio-content">
+          <div class="radio-game-context" id="radioGameContext">
+            <div class="radio-empty">Loading broadcast...</div>
+          </div>
+          <div class="radio-controls">
+            <button class="radio-play-btn" id="radioPlayBtn" type="button">PLAY WFAN</button>
+            <button class="radio-stop-btn" id="radioStopBtn" type="button" disabled>STOP</button>
+          </div>
+          <div class="radio-status" id="radioStatus" data-state="idle">Ready</div>
+          <div class="radio-links" id="radioLinks"></div>
+        </div>
+      </section>
+
       <!-- Standings -->
       <section class="card standings-card" id="standingsCard">
         <div class="card-header">
@@ -131,6 +161,7 @@
           </label>
         </div>
         <div class="schedule-count" id="scheduleCount"></div>
+        <button class="today-jump-btn" id="todayBtn">TODAY</button>
       </div>
 
       <!-- Schedule list -->
@@ -206,6 +237,18 @@
         <div class="stats-team" id="statsTeam">
           <div class="stat-chip"><span class="stat-label">TEAM AVG</span><span class="stat-value" id="teamAvg">--</span></div>
           <div class="stat-chip"><span class="stat-label">TEAM ERA</span><span class="stat-value" id="teamEra">--</span></div>
+        </div>
+      </section>
+
+      <!-- Active Roster -->
+      <section class="card roster-card" id="rosterCard">
+        <div class="card-header">
+          <span class="card-title">ACTIVE ROSTER</span>
+          <span class="card-subtitle" id="rosterCount">--</span>
+        </div>
+        <div class="roster-updated">Updated <span id="rosterUpdated">--</span></div>
+        <div class="roster-list" id="rosterList">
+          <div class="roster-empty">Loading active roster...</div>
         </div>
       </section>
 

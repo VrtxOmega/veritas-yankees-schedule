@@ -34,7 +34,9 @@ async function pollLiveGames() {
       if (!result.ok) return;
 
       const data = result.data;
+      const gameData = data.gameData || {};
       const liveData = data.liveData || {};
+      const linescore = liveData.linescore || {};
       const boxscore = liveData.boxscore || {};
       const teams = boxscore.teams || {};
 
@@ -55,8 +57,18 @@ async function pollLiveGames() {
       if (newHomeScore !== undefined && newAwayScore !== undefined) {
         allGames[gameIndex].homeTeam.score = newHomeScore;
         allGames[gameIndex].awayTeam.score = newAwayScore;
-        allGames[gameIndex].status = data.status?.statusCode;
-        allGames[gameIndex].detailedState = data.status?.detailedState;
+        allGames[gameIndex].status = gameData.status || allGames[gameIndex].status;
+        allGames[gameIndex].statusCode = gameData.status?.statusCode || allGames[gameIndex].statusCode;
+        allGames[gameIndex].detailedState = gameData.status?.detailedState || allGames[gameIndex].detailedState;
+        allGames[gameIndex].abstractState = gameData.status?.abstractGameState || allGames[gameIndex].abstractState;
+        allGames[gameIndex].liveStatus = {
+          inning: linescore.currentInningOrdinal,
+          inningHalf: linescore.inningHalf,
+          balls: linescore.balls,
+          strikes: linescore.strikes,
+          outs: linescore.outs,
+          lastUpdated: new Date().toISOString(),
+        };
 
         const scoreChanged = oldHomeScore !== newHomeScore || oldAwayScore !== newAwayScore;
         if (scoreChanged) {
@@ -64,8 +76,8 @@ async function pollLiveGames() {
             gamePk: game.gamePk,
             homeScore: newHomeScore,
             awayScore: newAwayScore,
-            inning: data.status?.abstractGameState,
-            detailedState: data.status?.detailedState,
+            inning: linescore.currentInningOrdinal,
+            detailedState: gameData.status?.detailedState,
           });
         }
       }
